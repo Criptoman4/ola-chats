@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Ola Chat | Modern Messaging</title>
-  <meta name="description" content="A modern chat application for seamless communication">
+  <title>Ola Chat | Premium Messaging</title>
+  <meta name="description" content="A beautifully designed chat application">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/styles.css">
-  <link rel="icon" href="https://ola-chat-10477.web.app/favicon.ico">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="icon" href="favicon.ico">
 </head>
 <body>
   <div class="app-container">
@@ -19,13 +19,13 @@
           <i class="fas fa-comment-dots pulse" aria-hidden="true"></i>
           <h1>Ola Chat</h1>
         </div>
-        <p class="tagline">Connect with friends instantly</p>
+        <p class="tagline">Where conversations come alive</p>
         <button id="google-signin" class="btn btn-primary" aria-label="Sign in with Google">
           <i class="fab fa-google" aria-hidden="true"></i> Continue with Google
         </button>
         <div class="auth-footer">
-          <p>By continuing, you agree to our <a href="#" aria-label="Terms of Service">Terms</a> and <a href="#" aria-label="Privacy Policy">Privacy Policy</a></p>
-          <p style="margin-top:10px; color:#6e2f2f;">Made by Abhishek J Nair</p>
+          <p>By continuing, you agree to our <a href="#">Terms</a> and <a href="#">Privacy Policy</a></p>
+          <p class="creator">Made with ♥ by Abhishek</p>
         </div>
       </div>
     </div>
@@ -47,7 +47,7 @@
               </span>
             </label>
             <button id="sign-out-btn" class="btn btn-icon" title="Sign Out" aria-label="Sign out">
-              <i class="fas fa-sign-out-alt" aria-hidden="true"></i>
+              <i class="fas fa-right-from-bracket" aria-hidden="true"></i>
             </button>
           </div>
         </div>
@@ -76,11 +76,8 @@
             </div>
           </div>
           <div class="chat-actions">
-            <button id="quick-hide-btn" class="btn btn-icon sneaky-btn" title="Menu" aria-label="Quick hide">
-              <i class="fas fa-bars" aria-hidden="true"></i>
-            </button>
-            <button id="video-call-btn" class="btn btn-icon" disabled aria-label="Start video call">
-              <i class="fas fa-video" aria-hidden="true"></i>
+            <button id="quick-hide-btn" class="btn btn-icon" title="Quick Hide" aria-label="Quick hide">
+              <i class="fas fa-eye-slash" aria-hidden="true"></i>
             </button>
           </div>
         </div>
@@ -94,7 +91,7 @@
         
         <div class="message-input-container">
           <button id="attach-btn" class="btn btn-icon" aria-label="Attach file">
-            <i class="fas fa-paperclip" aria-hidden="true"></i>
+            <i class="fas fa-plus" aria-hidden="true"></i>
           </button>
           <input type="text" id="message-input" placeholder="Type your message here..." disabled aria-label="Type your message">
           <button id="send-button" class="btn btn-primary" disabled aria-label="Send message">
@@ -105,21 +102,14 @@
     </div>
   </div>
 
-  <footer style="text-align:center;padding:1rem 0;color:#888;">
-    Made by Abhishek J Nair
+  <footer class="app-footer">
+    Made with ♥ by Abhishek
   </footer>
 
   <!-- Quick Hide Overlay -->
-  <div id="quick-hide-overlay" style="
-    display: none;
-    position: fixed;
-    z-index: 9999;
-    top: 0; left: 0; width: 100vw; height: 100vh;
-    background: #fff;
-    transition: opacity 0.2s;
-  "></div>
+  <div id="quick-hide-overlay"></div>
 
   <!-- Firebase SDKs -->
-  <script type="module" src="/app.js"></script>
+  <script type="module" src="app.js"></script>
 </body>
 </html>

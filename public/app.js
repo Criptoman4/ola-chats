@@ -18,7 +18,7 @@ import {
   onSnapshot, 
   orderBy, 
   serverTimestamp,
-  updateDoc // Added missing import
+  updateDoc
 } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore.js";
 
 // Firebase configuration
@@ -26,7 +26,7 @@ const firebaseConfig = {
   apiKey: "AIzaSyBmIfx2oHpH4fxmkmrElhPr6jDpyTOtaUA",
   authDomain: "ola-chat-10477.firebaseapp.com",
   projectId: "ola-chat-10477",
-  storageBucket: "ola-chat-10477.firebasestorage.app",
+  storageBucket: "ola-chat-10477.appspot.com",
   messagingSenderId: "770012786788",
   appId: "1:770012786788:web:b5836dda07fce307c92f71",
   measurementId: "G-MV641EK9BE"
@@ -37,27 +37,38 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// DOM elements
+// DOM elements with null protection
+const getElement = (id) => document.getElementById(id) || {
+  addEventListener: () => {},
+  removeEventListener: () => {},
+  disabled: false,
+  value: '',
+  textContent: '',
+  src: '',
+  classList: { add: () => {}, remove: () => {}, contains: () => false },
+  style: {}
+};
+
 const elements = {
-  googleSignInBtn: document.getElementById('google-signin'),
-  signOutBtn: document.getElementById('sign-out-btn'),
-  chatContainer: document.getElementById('chat-container'),
-  authContainer: document.getElementById('auth-container'),
-  messagesDiv: document.getElementById('messages'),
-  messageInput: document.getElementById('message-input'),
-  sendButton: document.getElementById('send-button'),
-  userName: document.getElementById('user-name'),
-  userAvatar: document.getElementById('user-avatar'),
-  recipientName: document.getElementById('recipient-name'),
-  recipientAvatar: document.getElementById('recipient-avatar'),
-  recipientStatus: document.getElementById('recipient-status'),
-  contactsList: document.querySelector('.contacts-list'),
-  searchContacts: document.getElementById('search-contacts'),
-  themeCheckbox: document.getElementById('theme-checkbox'),
+  googleSignInBtn: getElement('google-signin'),
+  signOutBtn: getElement('sign-out-btn'),
+  chatContainer: getElement('chat-container'),
+  authContainer: getElement('auth-container'),
+  messagesDiv: getElement('messages'),
+  messageInput: getElement('message-input'),
+  sendButton: getElement('send-button'),
+  userName: getElement('user-name'),
+  userAvatar: getElement('user-avatar'),
+  recipientName: getElement('recipient-name'),
+  recipientAvatar: getElement('recipient-avatar'),
+  recipientStatus: getElement('recipient-status'),
+  contactsList: document.querySelector('.contacts-list') || { innerHTML: '', appendChild: () => {} },
+  searchContacts: getElement('search-contacts'),
+  themeCheckbox: getElement('theme-checkbox'),
   body: document.body,
-  callBtn: document.getElementById('call-btn'),
-  videoCallBtn: document.getElementById('video-call-btn'),
-  attachBtn: document.getElementById('attach-btn')
+  attachBtn: getElement('attach-btn'),
+  quickHideBtn: getElement('quick-hide-btn'),
+  quickHideOverlay: getElement('quick-hide-overlay')
 };
 
 // App state
@@ -65,7 +76,7 @@ let currentUser = null;
 let recipientUid = null;
 let contacts = [];
 let unsubscribeMessages = null;
-let unsubscribeContacts = null; // Added for contacts listener cleanup
+let unsubscribeContacts = null;
 
 /* ===== Theme Management ===== */
 function initTheme() {
@@ -117,10 +128,12 @@ function formatTimestamp(timestamp) {
 }
 
 function scrollToBottom() {
-  elements.messagesDiv.scrollTo({
-    top: elements.messagesDiv.scrollHeight,
-    behavior: 'smooth'
-  });
+  if (elements.messagesDiv.scrollTo) {
+    elements.messagesDiv.scrollTo({
+      top: elements.messagesDiv.scrollHeight,
+      behavior: 'smooth'
+    });
+  }
 }
 
 /* ===== Authentication ===== */
@@ -136,14 +149,14 @@ async function handleGoogleSignIn() {
       uid: currentUser.uid,
       email: currentUser.email,
       displayName: currentUser.displayName,
-      photoURL: currentUser.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(currentUser.displayName)}&background=6C63FF`,
+      photoURL: currentUser.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(currentUser.displayName)}&background=6C5CE7`,
       lastSeen: serverTimestamp(),
       status: 'online'
     }, { merge: true });
     
     updateUserUI();
     loadContacts();
-    showNotification('Successfully signed in!');
+    showNotification('Welcome to Ola Chat!');
   } catch (error) {
     console.error('Sign-in error:', error);
     showNotification('Failed to sign in. Please try again.', 'error');
@@ -171,7 +184,7 @@ async function handleSignOut() {
       unsubscribeContacts = null;
     }
     
-    showNotification('Successfully signed out');
+    showNotification('Signed out successfully');
   } catch (error) {
     console.error('Sign-out error:', error);
     showNotification('Failed to sign out. Please try again.', 'error');
@@ -181,7 +194,7 @@ async function handleSignOut() {
 function updateUserUI() {
   if (currentUser) {
     elements.userName.textContent = currentUser.displayName;
-    elements.userAvatar.src = currentUser.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(currentUser.displayName)}&background=6C63FF`;
+    elements.userAvatar.src = currentUser.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(currentUser.displayName)}&background=6C5CE7`;
     elements.userAvatar.alt = `${currentUser.displayName}'s avatar`;
     elements.authContainer.classList.add('hidden');
     elements.chatContainer.classList.remove('hidden');
@@ -201,7 +214,7 @@ function updateUserUI() {
 async function loadContacts() {
   try {
     const usersRef = collection(db, 'users');
-    const q = query(usersRef, where('uid', '!=', currentUser.uid));
+    const q = query(usersRef, where('uid', '!=', currentUser?.uid || ''));
     
     // Clean up previous listener if exists
     if (unsubscribeContacts) {
@@ -239,7 +252,7 @@ async function loadContacts() {
           </div>
           <div class="contact-info">
             <h4>${contact.displayName}</h4>
-            <p class="status-text">
+            <p class="status-text ${contact.status === 'online' ? 'online' : 'offline'}">
               ${contact.status === 'online' ? 'Online' : 'Last seen recently'}
             </p>
           </div>
@@ -270,6 +283,8 @@ async function loadContacts() {
 }
 
 function selectContact(contact) {
+  if (!contact || !contact.uid) return;
+  
   if (unsubscribeMessages) {
     unsubscribeMessages();
     unsubscribeMessages = null;
@@ -284,15 +299,13 @@ function selectContact(contact) {
   
   elements.messageInput.disabled = false;
   elements.sendButton.disabled = false;
-  elements.callBtn.disabled = false;
-  elements.videoCallBtn.disabled = false;
   
   elements.messagesDiv.innerHTML = '';
   listenForMessages();
 }
 
 function listenForMessages() {
-  if (!currentUser || !recipientUid) return;
+  if (!currentUser?.uid || !recipientUid) return;
   
   const conversationId = [currentUser.uid, recipientUid].sort().join('_');
   const messagesRef = collection(db, 'conversations', conversationId, 'messages');
@@ -316,13 +329,15 @@ function listenForMessages() {
 }
 
 function displayMessage(message) {
+  if (!message?.text || !message?.senderId) return;
+  
   const messageElement = document.createElement('div');
-  messageElement.className = `message ${message.senderId === currentUser.uid ? 'sent' : 'received'}`;
+  messageElement.className = `message ${message.senderId === currentUser?.uid ? 'sent' : 'received'}`;
   
   messageElement.innerHTML = `
-    ${message.senderId !== currentUser.uid ? `
+    ${message.senderId !== currentUser?.uid ? `
       <div class="message-avatar">
-        <img src="${elements.recipientAvatar.src}" alt="${message.senderName}" class="avatar">
+        <img src="${elements.recipientAvatar.src}" alt="${message.senderName || 'User'}" class="avatar">
       </div>
     ` : ''}
     <div class="message-content">
@@ -330,7 +345,7 @@ function displayMessage(message) {
         <p>${message.text}</p>
         <span class="message-time">
           ${formatTimestamp(message.timestamp)}
-          ${message.senderId === currentUser.uid ? '<i class="fas fa-check-double status-icon" aria-hidden="true"></i>' : ''}
+          ${message.senderId === currentUser?.uid ? '<i class="fas fa-check-double status-icon" aria-hidden="true"></i>' : ''}
         </span>
       </div>
     </div>
@@ -341,7 +356,7 @@ function displayMessage(message) {
 
 async function sendMessage() {
   const messageText = elements.messageInput.value.trim();
-  if (!messageText || !recipientUid || !currentUser) return;
+  if (!messageText || !recipientUid || !currentUser?.uid) return;
 
   try {
     const conversationId = [currentUser.uid, recipientUid].sort().join('_');
@@ -357,6 +372,32 @@ async function sendMessage() {
     console.error('Send error:', error);
     showNotification('Failed to send message', 'error');
   }
+}
+
+/* ===== Quick Hide Feature ===== */
+function toggleQuickHide() {
+  const isHidden = elements.quickHideOverlay.style.display === 'block';
+  elements.quickHideOverlay.style.display = isHidden ? 'none' : 'block';
+  
+  // Update icon and tooltip
+  const icon = elements.quickHideBtn.querySelector('i');
+  if (isHidden) {
+    elements.quickHideBtn.title = "Quick Hide";
+    icon.classList.remove('fa-eye');
+    icon.classList.add('fa-eye-slash');
+  } else {
+    elements.quickHideBtn.title = "Show Chat";
+    icon.classList.remove('fa-eye-slash');
+    icon.classList.add('fa-eye');
+  }
+}
+
+/* ===== Insert Feature ===== */
+function setupInsertFeature() {
+  elements.attachBtn.addEventListener('click', () => {
+    showNotification('Insert feature coming soon!');
+    // Future implementation for file/emoji insertion
+  });
 }
 
 /* ===== Event Listeners ===== */
@@ -388,21 +429,17 @@ function setupEventListeners() {
     const contactElements = document.querySelectorAll('.contact');
     
     contactElements.forEach(contact => {
-      const name = contact.querySelector('h4').textContent.toLowerCase();
+      const name = contact.querySelector('h4')?.textContent?.toLowerCase() || '';
       contact.style.display = name.includes(searchTerm) ? 'flex' : 'none';
     });
   });
 
-  // Placeholder buttons
-  elements.callBtn.addEventListener('click', () => {
-    showNotification('Call functionality coming soon!');
-  });
-  elements.videoCallBtn.addEventListener('click', () => {
-    showNotification('Video call functionality coming soon!');
-  });
-  elements.attachBtn.addEventListener('click', () => {
-    showNotification('File attachment coming soon!');
-  });
+  // Quick Hide
+  elements.quickHideBtn.addEventListener('click', toggleQuickHide);
+  elements.quickHideOverlay.addEventListener('click', toggleQuickHide);
+
+  // Insert Feature
+  setupInsertFeature();
 }
 
 /* ===== Initialize App ===== */
@@ -422,22 +459,5 @@ function initApp() {
   });
 }
 
-// Quick Hide Feature
-const quickHideBtn = document.getElementById('quick-hide-btn');
-const quickHideOverlay = document.getElementById('quick-hide-overlay');
-
-let isHidden = false;
-
-quickHideBtn.addEventListener('click', () => {
-  isHidden = !isHidden;
-  if (isHidden) {
-    quickHideOverlay.style.display = 'block';
-    quickHideBtn.title = "Unhide";
-  } else {
-    quickHideOverlay.style.display = 'none';
-    quickHideBtn.title = "Menu";
-  }
-});
-
-// Start the app
-initApp();
+// Start the app when DOM is loaded
+document.addEventListener('DOMContentLoaded', initApp);
