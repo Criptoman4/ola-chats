@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ola Chat | Direct Messaging</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Auth Screen -->
+    <div id="auth-container" class="auth-container">
+      <div class="auth-card">
+        <div class="logo">
+          <i class="fas fa-comment-dots"></i>
+          <h1>Ola Chat</h1>
+        </div>
+        <p class="tagline">Connect with friends instantly</p>
+        <button id="google-signin" class="google-btn">
+          <i class="fab fa-google"></i>
+          Continue with Google
+        </button>
+        <div class="auth-footer">
+          <p>By continuing, you agree to our <a href="#">Terms</a> and <a href="#">Privacy Policy</a></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Chat Screen -->
+    <div id="chat-container" class="chat-container hidden">
+      <div class="sidebar">
+        <div class="sidebar-header">
+          <div class="user-profile">
+            <img id="user-avatar" src="" alt="User Avatar">
+            <span id="user-name"></span>
+          </div>
+          <button id="sign-out-btn" class="sign-out-btn" title="Sign Out">
+            <i class="fas fa-sign-out-alt"></i>
+          </button>
+        </div>
+        
+        <div class="search-container">
+          <input type="text" id="search-contacts" placeholder="Search contacts...">
+          <i class="fas fa-search"></i>
+        </div>
+        
+        <div class="contacts-list">
+          <!-- Contacts will be populated here -->
+        </div>
+      </div>
+      
+      <div class="chat-area">
+        <div class="chat-header">
+          <div class="recipient-info">
+            <img id="recipient-avatar" src="https://ui-avatars.com/api/?name=Unknown&background=random" alt="Recipient">
+            <div>
+              <h3 id="recipient-name">Select a contact</h3>
+              <p id="recipient-status" class="status">Offline</p>
+            </div>
+          </div>
+        </div>
+        
+        <div id="messages" class="messages">
+          <div class="empty-state">
+            <i class="fas fa-comments"></i>
+            <p>Select a contact to start chatting</p>
+          </div>
+        </div>
+        
+        <div class="message-input-container">
+          <input type="text" id="message-input" placeholder="Type your message here..." disabled>
+          <button id="send-button" class="send-btn" disabled>
+            <i class="fas fa-paper-plane"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Firebase SDKs -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-app.js";
+    import { 
+      getAuth, 
+      GoogleAuthProvider, 
+      signInWithPopup, 
+      signOut,
+      onAuthStateChanged 
+    } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-auth.js";
+    import { 
+      getFirestore, 
+      collection, 
+      doc, 
+      setDoc, 
+      addDoc, 
+      query, 
+      where, 
+      getDocs, 
+      onSnapshot, 
+      orderBy, 
+      serverTimestamp 
+    } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore.js";
+
+    // Your Firebase configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyBmIfx2oHpH4fxmkmrElhPr6jDpyTOtaUA",
+      authDomain: "ola-chat-10477.firebaseapp.com",
+      projectId: "ola-chat-10477",
+      storageBucket: "ola-chat-10477.firebasestorage.app",
+      messagingSenderId: "770012786788",
+      appId: "1:770012786788:web:b5836dda07fce307c92f71",
+      measurementId: "G-MV641EK9BE"
+    };
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    // DOM elements
+    const googleSignInBtn = document.getElementById('google-signin');
+    const signOutBtn = document.getElementById('sign-out-btn');
+    const chatContainer = document.getElementById('chat-container');
+    const authContainer = document.getElementById('auth-container');
+    const messagesDiv = document.getElementById('messages');
+    const messageInput = document.getElementById('message-input');
+    const sendButton = document.getElementById('send-button');
+    const userName = document.getElementById('user-name');
+    const userAvatar = document.getElementById('user-avatar');
+    const recipientName = document.getElementById('recipient-name');
+    const recipientAvatar = document.getElementById('recipient-avatar');
+    const contactsList = document.querySelector('.contacts-list');
+    const searchContacts = document.getElementById('search-contacts');
+
+    let currentUser = null;
+    let recipientUid = null;
+    let contacts = [];
+
+    // Google Sign-In
+    googleSignInBtn.addEventListener('click', async () => {
+      const provider = new GoogleAuthProvider();
+      try {
+        const result = await signInWithPopup(auth, provider);
+        currentUser = result.user;
+        console.log('Logged in as:', currentUser.displayName);
+        
+        // Store user data in Firestore
+        const userRef = doc(db, 'users', currentUser.uid);
+        await setDoc(userRef, {
+          uid: currentUser.uid,
+          email: currentUser.email,
+          displayName: currentUser.displayName,
+          photoURL: currentUser.photoURL,
+          lastSeen: serverTimestamp()
+        }, { merge: true });
+        
+        // Load contacts
+        loadContacts();
+      } catch (error) {
+        console.error('Error signing in:', error);
+      }
+    });
+
+    // Sign Out
+    signOutBtn.addEventListener('click', async () => {
+      try {
+        await signOut(auth);
+      } catch (error) {
+        console.error('Error signing out:', error);
+      }
+    });
+
+    // Load contacts
+    async function loadContacts() {
+      try {
+        const usersRef = collection(db, 'users');
+        const q = query(usersRef, where('uid', '!=', currentUser.uid));
+        const querySnapshot = await getDocs(q);
+        
+        contacts = [];
+        contactsList.innerHTML = '';
+        
+        querySnapshot.forEach((doc) => {
+          const contact = doc.data();
+          contacts.push(contact);
+          
+          const contactElement = document.createElement('div');
+          contactElement.className = 'contact';
+          contactElement.innerHTML = `
+            <img src="${contact.photoURL || `https://ui-avatars.com/api/?name=${contact.displayName}&background=random`}" alt="${contact.displayName}">
+            <div class="contact-info">
+              <h4>${contact.displayName}</h4>
+              <p class="status">Last seen recently</p>
+            </div>
+          `;
+          
+          contactElement.addEventListener('click', () => selectContact(contact));
+          contactsList.appendChild(contactElement);
+        });
+      } catch (error) {
+        console.error('Error loading contacts:', error);
+      }
+    }
+
+    // Select contact to chat with
+    function selectContact(contact) {
+      recipientUid = contact.uid;
+      recipientName.textContent = contact.displayName;
+      recipientAvatar.src = contact.photoURL || `https://ui-avatars.com/api/?name=${contact.displayName}&background=random`;
+      
+      // Enable message input
+      messageInput.disabled = false;
+      sendButton.disabled = false;
+      
+      // Clear and load messages
+      messagesDiv.innerHTML = '';
+      listenForMessages();
+    }
+
+    // Send message
+    sendButton.addEventListener('click', sendMessage);
+    messageInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') sendMessage();
+    });
+
+    async function sendMessage() {
+      const messageText = messageInput.value.trim();
+      if (!messageText || !recipientUid || !currentUser) return;
+      
+      try {
+        const conversationId = [currentUser.uid, recipientUid].sort().join('_');
+        const messagesRef = collection(db, 'conversations', conversationId, 'messages');
+        
+        await addDoc(messagesRef, {
+          text: messageText,
+          senderId: currentUser.uid,
+          senderName: currentUser.displayName,
+          timestamp: serverTimestamp()
+        });
+        
+        messageInput.value = '';
+      } catch (error) {
+        console.error('Error sending message:', error);
+      }
+    }
+
+    // Listen for new messages
+    function listenForMessages() {
+      if (!currentUser || !recipientUid) return;
+      
+      const conversationId = [currentUser.uid, recipientUid].sort().join('_');
+      const messagesRef = collection(db, 'conversations', conversationId, 'messages');
+      const q = query(messagesRef, orderBy('timestamp'));
+      
+      onSnapshot(q, (snapshot) => {
+        messagesDiv.innerHTML = '';
+        snapshot.forEach((doc) => {
+          const message = doc.data();
+          const messageElement = document.createElement('div');
+          messageElement.className = `message ${message.senderId === currentUser.uid ? 'sent' : 'received'}`;
+          
+          messageElement.innerHTML = `
+            <div class="message-content">
+              <p>${message.text}</p>
+              <span class="message-time">${message.timestamp?.toDate().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+            </div>
+          `;
+          
+          messagesDiv.appendChild(messageElement);
+        });
+        
+        // Scroll to bottom
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+      });
+    }
+
+    // Auth state listener
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        currentUser = user;
+        authContainer.classList.add('hidden');
+        chatContainer.classList.remove('hidden');
+        
+        // Update user info in sidebar
+        userName.textContent = user.displayName;
+        userAvatar.src = user.photoURL || `https://ui-avatars.com/api/?name=${user.displayName}&background=random`;
+        
+        // Load contacts
+        loadContacts();
+      } else {
+        currentUser = null;
+        authContainer.classList.remove('hidden');
+        chatContainer.classList.add('hidden');
+      }
+    });
+  </script>
+</body>
+</html>
