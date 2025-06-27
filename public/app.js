@@ -17,22 +17,8 @@ import {
   getDocs, 
   onSnapshot, 
   orderBy, 
-  serverTimestamp,
-  updateDoc
+  serverTimestamp
 } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore.js";
-
-// Modern color palette
-const colors = {
-  primary: '#6C63FF',
-  secondary: '#4D44DB',
-  accent: '#FF6584',
-  success: '#4CC9F0',
-  warning: '#F8961E',
-  darkBg: '#1A1A2E',
-  lightBg: '#F8F9FA',
-  textDark: '#2B2D42',
-  textLight: '#F8F9FA'
-};
 
 // Firebase configuration
 const firebaseConfig = {
@@ -79,32 +65,6 @@ let recipientUid = null;
 let contacts = [];
 let unsubscribeMessages = null;
 
-/* ===== UI Enhancements ===== */
-function applyRippleEffect(element) {
-  element.addEventListener('click', function(e) {
-    const ripple = document.createElement('span');
-    ripple.className = 'ripple';
-    
-    const rect = element.getBoundingClientRect();
-    const size = Math.max(rect.width, rect.height);
-    const x = e.clientX - rect.left - size/2;
-    const y = e.clientY - rect.top - size/2;
-    
-    ripple.style.width = ripple.style.height = `${size}px`;
-    ripple.style.left = `${x}px`;
-    ripple.style.top = `${y}px`;
-    
-    element.appendChild(ripple);
-    
-    setTimeout(() => ripple.remove(), 600);
-  });
-}
-
-function animateElement(element, animation, duration = 300) {
-  element.style.animation = `${animation} ${duration}ms ease-out`;
-  setTimeout(() => element.style.animation = '', duration);
-}
-
 /* ===== Theme Management ===== */
 function initTheme() {
   const savedTheme = localStorage.getItem('theme');
@@ -119,56 +79,74 @@ function enableDarkMode() {
   elements.body.classList.add('dark-mode');
   elements.themeCheckbox.checked = true;
   localStorage.setItem('theme', 'dark');
-  document.documentElement.style.setProperty('--primary-color', colors.secondary);
-  document.documentElement.style.setProperty('--accent-color', '#FF8E9E');
 }
 
 function disableDarkMode() {
   elements.body.classList.remove('dark-mode');
   elements.themeCheckbox.checked = false;
   localStorage.setItem('theme', 'light');
-  document.documentElement.style.setProperty('--primary-color', colors.primary);
-  document.documentElement.style.setProperty('--accent-color', colors.accent);
 }
 
-// Initialize theme and set CSS variables
-initTheme();
-document.documentElement.style.setProperty('--primary-color', colors.primary);
-document.documentElement.style.setProperty('--secondary-color', colors.secondary);
-document.documentElement.style.setProperty('--accent-color', colors.accent);
+/* ===== UI Functions ===== */
+function showNotification(message, type = 'success') {
+  const notification = document.createElement('div');
+  notification.className = `notification ${type}`;
+  notification.innerHTML = `
+    <i class="fas fa-${type === 'error' ? 'exclamation-circle' : 'check-circle'}"></i>
+    <span>${message}</span>
+  `;
+  document.body.appendChild(notification);
+  
+  setTimeout(() => {
+    notification.classList.add('fade-out');
+    setTimeout(() => notification.remove(), 300);
+  }, 3000);
+}
+
+function formatTimestamp(timestamp) {
+  try {
+    const date = timestamp?.toDate?.() || new Date(timestamp);
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  } catch {
+    return 'Just now';
+  }
+}
+
+function scrollToBottom() {
+  elements.messagesDiv.scrollTo({
+    top: elements.messagesDiv.scrollHeight,
+    behavior: 'smooth'
+  });
+}
 
 /* ===== Authentication ===== */
 async function handleGoogleSignIn() {
-  animateElement(elements.googleSignInBtn, 'pulse');
-  
-  const provider = new GoogleAuthProvider();
   try {
+    const provider = new GoogleAuthProvider();
     const result = await signInWithPopup(auth, provider);
     currentUser = result.user;
     
-    // Store user data
+    // Store user data in Firestore
     const userRef = doc(db, 'users', currentUser.uid);
     await setDoc(userRef, {
       uid: currentUser.uid,
       email: currentUser.email,
       displayName: currentUser.displayName,
-      photoURL: currentUser.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(currentUser.displayName)}&background=${colors.primary.replace('#', '')}`,
+      photoURL: currentUser.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(currentUser.displayName)}&background=6C63FF`,
       lastSeen: serverTimestamp(),
       status: 'online'
     }, { merge: true });
     
     updateUserUI();
     loadContacts();
-    animateElement(elements.chatContainer, 'fadeIn');
+    showNotification('Successfully signed in!');
   } catch (error) {
     console.error('Sign-in error:', error);
-    showError('Failed to sign in. Please try again.', 'error');
+    showNotification('Failed to sign in. Please try again.', 'error');
   }
 }
 
 async function handleSignOut() {
-  animateElement(elements.signOutBtn, 'pulse');
-  
   try {
     if (currentUser) {
       const userRef = doc(db, 'users', currentUser.uid);
@@ -178,19 +156,17 @@ async function handleSignOut() {
       });
     }
     await signOut(auth);
-    animateElement(elements.authContainer, 'fadeIn');
+    showNotification('Successfully signed out');
   } catch (error) {
     console.error('Sign-out error:', error);
-    showError('Failed to sign out. Please try again.', 'error');
+    showNotification('Failed to sign out. Please try again.', 'error');
   }
 }
 
-/* ===== UI Functions ===== */
 function updateUserUI() {
   if (currentUser) {
     elements.userName.textContent = currentUser.displayName;
-    elements.userAvatar.src = currentUser.photoURL || 
-      `https://ui-avatars.com/api/?name=${encodeURIComponent(currentUser.displayName)}&background=${colors.primary.replace('#', '')}`;
+    elements.userAvatar.src = currentUser.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(currentUser.displayName)}&background=6C63FF`;
     elements.authContainer.classList.add('hidden');
     elements.chatContainer.classList.remove('hidden');
   } else {
@@ -199,24 +175,7 @@ function updateUserUI() {
   }
 }
 
-function showError(message, type = 'error') {
-  const errorElement = document.createElement('div');
-  errorElement.className = `notification ${type}`;
-  errorElement.innerHTML = `
-    <i class="fas fa-${type === 'error' ? 'exclamation-circle' : 'check-circle'}"></i>
-    <span>${message}</span>
-  `;
-  
-  document.body.appendChild(errorElement);
-  animateElement(errorElement, 'slideInUp');
-  
-  setTimeout(() => {
-    animateElement(errorElement, 'slideOutDown');
-    setTimeout(() => errorElement.remove(), 300);
-  }, 3000);
-}
-
-/* ===== Chat Functions ===== */
+/* ===== Contacts and Messaging ===== */
 async function loadContacts() {
   try {
     const usersRef = collection(db, 'users');
@@ -259,16 +218,14 @@ async function loadContacts() {
       `;
       
       contactElement.addEventListener('click', () => {
-        animateElement(contactElement, 'pulse');
         selectContact(contact);
       });
       
       elements.contactsList.appendChild(contactElement);
-      animateElement(contactElement, 'fadeIn');
     });
   } catch (error) {
     console.error('Load contacts error:', error);
-    showError('Failed to load contacts', 'error');
+    showNotification('Failed to load contacts', 'error');
   }
 }
 
@@ -290,9 +247,6 @@ function selectContact(contact) {
   
   elements.messagesDiv.innerHTML = '';
   listenForMessages();
-  
-  // Animate chat header
-  animateElement(elements.recipientAvatar, 'bounceIn');
 }
 
 function listenForMessages() {
@@ -302,127 +256,89 @@ function listenForMessages() {
   const messagesRef = collection(db, 'conversations', conversationId, 'messages');
   const q = query(messagesRef, orderBy('timestamp'));
   
-  unsubscribeMessages = onSnapshot(q, (snapshot) => {
-    elements.messagesDiv.innerHTML = '';
-    snapshot.forEach((doc, index) => {
-      const message = doc.data();
-      displayMessage(message, index);
-    });
-    scrollToBottom();
-  });
+  unsubscribeMessages = onSnapshot(q, 
+    (snapshot) => {
+      elements.messagesDiv.innerHTML = '';
+      snapshot.forEach((doc) => {
+        const message = doc.data();
+        displayMessage(message);
+      });
+      scrollToBottom();
+    },
+    (error) => {
+      console.error('Message listener error:', error);
+      showNotification('Connection error - reconnecting...', 'error');
+      setTimeout(listenForMessages, 3000);
+    }
+  );
 }
 
-function displayMessage(message, index) {
+function displayMessage(message) {
   const messageElement = document.createElement('div');
   messageElement.className = `message ${message.senderId === currentUser.uid ? 'sent' : 'received'}`;
-  messageElement.style.animationDelay = `${index * 50}ms`;
   
-  // Add typing indicator animation for received messages
-  if (message.senderId !== currentUser.uid) {
-    messageElement.innerHTML = `
+  messageElement.innerHTML = `
+    ${message.senderId !== currentUser.uid ? `
       <div class="message-avatar">
         <img src="${elements.recipientAvatar.src}" alt="Avatar" class="avatar">
       </div>
-      <div class="message-content">
-        <div class="message-bubble">
-          <p>${message.text}</p>
-          <span class="message-time">
-            ${message.timestamp?.toDate().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-          </span>
-        </div>
+    ` : ''}
+    <div class="message-content">
+      <div class="message-bubble">
+        <p>${message.text}</p>
+        <span class="message-time">
+          ${formatTimestamp(message.timestamp)}
+          ${message.senderId === currentUser.uid ? '<i class="fas fa-check-double status-icon"></i>' : ''}
+        </span>
       </div>
-    `;
-  } else {
-    messageElement.innerHTML = `
-      <div class="message-content">
-        <div class="message-bubble">
-          <p>${message.text}</p>
-          <span class="message-time">
-            ${message.timestamp?.toDate().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-            <i class="fas fa-check-double status-icon"></i>
-          </span>
-        </div>
-      </div>
-    `;
-  }
+    </div>
+  `;
   
   elements.messagesDiv.appendChild(messageElement);
-  animateElement(messageElement, 'fadeIn');
-}
-
-function scrollToBottom() {
-  elements.messagesDiv.scrollTo({
-    top: elements.messagesDiv.scrollHeight,
-    behavior: 'smooth'
-  });
 }
 
 async function sendMessage() {
   const messageText = elements.messageInput.value.trim();
   if (!messageText || !recipientUid || !currentUser) return;
-  
-  // Add temporary local message for instant feedback
-  const tempId = Date.now();
-  const tempMessage = {
-    text: messageText,
-    senderId: currentUser.uid,
-    senderName: currentUser.displayName,
-    timestamp: new Date()
-  };
-  
-  displayMessage(tempMessage, 0);
-  scrollToBottom();
-  elements.messageInput.value = '';
-  
+
   try {
     const conversationId = [currentUser.uid, recipientUid].sort().join('_');
-    const messagesRef = collection(db, 'conversations', conversationId, 'messages');
-    
-    await addDoc(messagesRef, {
+    await addDoc(collection(db, 'conversations', conversationId, 'messages'), {
       text: messageText,
       senderId: currentUser.uid,
       senderName: currentUser.displayName,
       timestamp: serverTimestamp()
     });
-    
-    // Remove temporary message when real one arrives
-    const tempElement = document.querySelector(`[data-temp-id="${tempId}"]`);
-    if (tempElement) tempElement.remove();
+    elements.messageInput.value = '';
   } catch (error) {
-    console.error('Send message error:', error);
-    showError('Failed to send message', 'error');
-    
-    // Mark temporary message as failed
-    const tempElement = document.querySelector(`[data-temp-id="${tempId}"]`);
-    if (tempElement) {
-      tempElement.classList.add('failed');
-      tempElement.querySelector('.status-icon').className = 'fas fa-exclamation-circle status-icon';
-    }
+    console.error('Send error:', error);
+    showNotification('Failed to send message', 'error');
   }
 }
 
 /* ===== Event Listeners ===== */
 function setupEventListeners() {
+  // Theme toggle
+  elements.themeCheckbox.addEventListener('change', () => {
+    if (elements.themeCheckbox.checked) {
+      enableDarkMode();
+    } else {
+      disableDarkMode();
+    }
+  });
+
   // Auth
   elements.googleSignInBtn.addEventListener('click', handleGoogleSignIn);
   elements.signOutBtn.addEventListener('click', handleSignOut);
-  
-  // Messages
+
+  // Messaging
   elements.sendButton.addEventListener('click', sendMessage);
   elements.messageInput.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
+    if (e.key === 'Enter') {
       sendMessage();
     }
   });
-  
-  // UI Effects
-  applyRippleEffect(elements.googleSignInBtn);
-  applyRippleEffect(elements.sendButton);
-  [elements.callBtn, elements.videoCallBtn, elements.attachBtn].forEach(btn => {
-    applyRippleEffect(btn);
-  });
-  
+
   // Search
   elements.searchContacts.addEventListener('input', (e) => {
     const searchTerm = e.target.value.toLowerCase();
@@ -433,26 +349,35 @@ function setupEventListeners() {
       contact.style.display = name.includes(searchTerm) ? 'flex' : 'none';
     });
   });
-  
-  // Theme toggle
-  elements.themeCheckbox.addEventListener('change', () => {
-    if (elements.themeCheckbox.checked) {
-      enableDarkMode();
-    } else {
-      disableDarkMode();
-    }
-    animateElement(elements.body, 'fadeIn');
+
+  // Placeholder buttons
+  elements.callBtn.addEventListener('click', () => {
+    showNotification('Call functionality coming soon!');
+  });
+  elements.videoCallBtn.addEventListener('click', () => {
+    showNotification('Video call functionality coming soon!');
+  });
+  elements.attachBtn.addEventListener('click', () => {
+    showNotification('File attachment coming soon!');
   });
 }
 
-// Initialize
-setupEventListeners();
-onAuthStateChanged(auth, (user) => {
-  if (user) {
-    currentUser = user;
-    updateUserUI();
-  } else {
-    currentUser = null;
-    updateUserUI();
-  }
-});
+/* ===== Initialize App ===== */
+function initApp() {
+  setupEventListeners();
+  initTheme();
+  
+  onAuthStateChanged(auth, (user) => {
+    if (user) {
+      currentUser = user;
+      updateUserUI();
+      loadContacts();
+    } else {
+      currentUser = null;
+      updateUserUI();
+    }
+  });
+}
+
+// Start the app
+initApp();
