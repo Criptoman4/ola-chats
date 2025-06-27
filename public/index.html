@@ -1,12 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Ola Chat | Direct Messaging</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet"/>
-  <link rel="stylesheet" href="styles.css"/>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ola Chat | Secure Messaging</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="icon" href="favicon.ico" type="image/x-icon">
 </head>
 <body>
   <div class="app-container">
@@ -17,9 +18,10 @@
           <i class="fas fa-comment-dots"></i>
           <h1>Ola Chat</h1>
         </div>
-        <p class="tagline">Connect with friends instantly</p>
+        <p class="tagline">Secure messaging with end-to-end encryption</p>
         <button id="google-signin" class="google-btn">
-          <i class="fab fa-google"></i> Continue with Google
+          <i class="fab fa-google"></i>
+          Continue with Google
         </button>
         <div class="auth-footer">
           <p>By continuing, you agree to our <a href="#">Terms</a> and <a href="#">Privacy Policy</a></p>
@@ -32,40 +34,67 @@
       <div class="sidebar">
         <div class="sidebar-header">
           <div class="user-profile">
-            <img id="user-avatar" src="" alt="User Avatar"/>
+            <img id="user-avatar" src="" alt="User Avatar" class="avatar">
             <span id="user-name"></span>
           </div>
-          <button id="sign-out-btn" class="sign-out-btn" title="Sign Out">
-            <i class="fas fa-sign-out-alt"></i>
-          </button>
+          <div class="header-actions">
+            <label class="theme-switch" title="Toggle dark mode">
+              <input type="checkbox" id="theme-checkbox">
+              <span class="slider">
+                <i class="fas fa-moon icon moon"></i>
+                <i class="fas fa-sun icon sun"></i>
+              </span>
+            </label>
+            <button id="sign-out-btn" class="icon-btn" title="Sign Out">
+              <i class="fas fa-sign-out-alt"></i>
+            </button>
+          </div>
         </div>
+        
         <div class="search-container">
-          <input type="text" id="search-contacts" placeholder="Search contacts..."/>
           <i class="fas fa-search"></i>
+          <input type="text" id="search-contacts" placeholder="Search contacts...">
         </div>
+        
         <div class="contacts-list">
-          <!-- Contacts will be populated here -->
+          <div class="empty-contacts">
+            <i class="fas fa-users"></i>
+            <p>Your contacts will appear here</p>
+          </div>
         </div>
       </div>
+      
       <div class="chat-area">
         <div class="chat-header">
           <div class="recipient-info">
-            <img id="recipient-avatar" src="https://ui-avatars.com/api/?name=Unknown&background=random" alt="Recipient"/>
+            <img id="recipient-avatar" src="https://ui-avatars.com/api/?name=Unknown&background=random" alt="Recipient" class="avatar">
             <div>
               <h3 id="recipient-name">Select a contact</h3>
               <p id="recipient-status" class="status">Offline</p>
             </div>
           </div>
-          <div id="chat-loading" class="chat-loading hidden"><i class="fas fa-spinner fa-spin"></i> Loading...</div>
+          <div class="chat-actions">
+            <button id="call-btn" class="icon-btn" disabled>
+              <i class="fas fa-phone"></i>
+            </button>
+            <button id="video-call-btn" class="icon-btn" disabled>
+              <i class="fas fa-video"></i>
+            </button>
+          </div>
         </div>
+        
         <div id="messages" class="messages">
           <div class="empty-state">
             <i class="fas fa-comments"></i>
             <p>Select a contact to start chatting</p>
           </div>
         </div>
+        
         <div class="message-input-container">
-          <input type="text" id="message-input" placeholder="Type your message here..." disabled/>
+          <button id="attach-btn" class="icon-btn">
+            <i class="fas fa-paperclip"></i>
+          </button>
+          <input type="text" id="message-input" placeholder="Type your message here..." disabled>
           <button id="send-button" class="send-btn" disabled>
             <i class="fas fa-paper-plane"></i>
           </button>
@@ -73,6 +102,8 @@
       </div>
     </div>
   </div>
+
+  <!-- Firebase SDKs -->
   <script type="module" src="app.js"></script>
 </body>
 </html>
