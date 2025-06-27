@@ -3,36 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <title>Ola Chat | Secure Messaging</title>
-  
-  <!-- Preconnect to external domains for better performance -->
-  <link rel="preconnect" href="https://cdnjs.cloudflare.com">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  
-  <!-- Font Awesome with integrity check -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" 
-        integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" 
-        crossorigin="anonymous" 
-        referrerpolicy="no-referrer" />
-  
-  <!-- Google Fonts -->
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" 
-        rel="stylesheet">
-  
-  <!-- Local CSS with absolute path -->
+  <title>Ola Chat | Modern Messaging</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/styles.css">
-  
-  <!-- Favicon with multiple versions -->
-  <link rel="icon" href="/favicon.ico" type="image/x-icon">
-  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
-  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
-  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
-  <link rel="manifest" href="/site.webmanifest">
-  
-  <!-- Theme color for mobile browsers -->
-  <meta name="theme-color" content="#6C63FF">
+  <link rel="icon" href="https://ola-chat-10477.web.app/favicon.ico">
 </head>
 <body>
   <div class="app-container">
@@ -40,16 +15,17 @@
     <div id="auth-container" class="auth-container">
       <div class="auth-card">
         <div class="logo">
-          <i class="fas fa-comment-dots"></i>
+          <i class="fas fa-comment-dots pulse"></i>
           <h1>Ola Chat</h1>
         </div>
-        <p class="tagline">Secure messaging with end-to-end encryption</p>
-        <button id="google-signin" class="google-btn">
-          <i class="fab fa-google"></i>
-          Continue with Google
+        <p class="tagline">Connect with friends instantly</p>
+        <button id="google-signin" class="btn btn-primary">
+          <i class="fab fa-google"></i> Continue with Google
         </button>
         <div class="auth-footer">
           <p>By continuing, you agree to our <a href="#">Terms</a> and <a href="#">Privacy Policy</a></p>
+            <p style="margin-top:10px; color:#6e2f2f;">Made by Abhishek J Nair</p>
+
         </div>
       </div>
     </div>
@@ -63,14 +39,14 @@
             <span id="user-name"></span>
           </div>
           <div class="header-actions">
-            <label class="theme-switch" title="Toggle dark mode">
+            <label class="theme-switch">
               <input type="checkbox" id="theme-checkbox">
-              <span class="slider">
+              <span class="slider round">
                 <i class="fas fa-moon icon moon"></i>
                 <i class="fas fa-sun icon sun"></i>
               </span>
             </label>
-            <button id="sign-out-btn" class="icon-btn" title="Sign Out">
+            <button id="sign-out-btn" class="btn btn-icon" title="Sign Out">
               <i class="fas fa-sign-out-alt"></i>
             </button>
           </div>
@@ -83,8 +59,9 @@
         
         <div class="contacts-list">
           <div class="empty-contacts">
-            <i class="fas fa-users"></i>
-            <p>Your contacts will appear here</p>
+            <i class="fas fa-user-plus"></i>
+            <p>No contacts found</p>
+            <small>Invite friends to join!</small>
           </div>
         </div>
       </div>
@@ -99,10 +76,10 @@
             </div>
           </div>
           <div class="chat-actions">
-            <button id="call-btn" class="icon-btn" disabled>
+            <button id="call-btn" class="btn btn-icon" disabled>
               <i class="fas fa-phone"></i>
             </button>
-            <button id="video-call-btn" class="icon-btn" disabled>
+            <button id="video-call-btn" class="btn btn-icon" disabled>
               <i class="fas fa-video"></i>
             </button>
           </div>
@@ -116,11 +93,11 @@
         </div>
         
         <div class="message-input-container">
-          <button id="attach-btn" class="icon-btn">
+          <button id="attach-btn" class="btn btn-icon">
             <i class="fas fa-paperclip"></i>
           </button>
           <input type="text" id="message-input" placeholder="Type your message here..." disabled>
-          <button id="send-button" class="send-btn" disabled>
+          <button id="send-button" class="btn btn-primary" disabled>
             <i class="fas fa-paper-plane"></i>
           </button>
         </div>
@@ -128,7 +105,12 @@
     </div>
   </div>
 
+  <footer style="text-align:center;padding:1rem 0;color:#888;">
+  Made by Abhishek J Nair
+</footer>
+
   <!-- Firebase SDKs -->
-  <script type="module" src="app.js"></script>
+  <script type="module" src="/app.js"></script>
+
 </body>
 </html>
