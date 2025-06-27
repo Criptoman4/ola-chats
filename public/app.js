@@ -379,5 +379,25 @@ function initApp() {
   });
 }
 
+// Quick Hide Feature
+const quickHideBtn = document.getElementById('quick-hide-btn');
+const quickHideOverlay = document.getElementById('quick-hide-overlay');
+
+let isHidden = false;
+
+quickHideBtn.addEventListener('click', () => {
+  isHidden = !isHidden;
+  if (isHidden) {
+    quickHideOverlay.style.display = 'block';
+    quickHideBtn.title = "Unhide";
+    // Optionally change icon to indicate unhide:
+    // quickHideBtn.innerHTML = '<i class="fas fa-eye-slash"></i>';
+  } else {
+    quickHideOverlay.style.display = 'none';
+    quickHideBtn.title = "Menu";
+    // quickHideBtn.innerHTML = '<i class="fas fa-bars"></i>';
+  }
+});
+
 // Start the app
 initApp();

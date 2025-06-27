@@ -76,13 +76,12 @@
             </div>
           </div>
           <div class="chat-actions">
-            <button id="call-btn" class="btn btn-icon" disabled>
-              <i class="fas fa-phone"></i>
-            </button>
-            <button id="video-call-btn" class="btn btn-icon" disabled>
-              <i class="fas fa-video"></i>
-            </button>
-          </div>
+  <button id="quick-hide-btn" class="btn btn-icon sneaky-btn" title="Menu">
+        <i class="fas fa-bars"></i>
+          </button>
+             <button id="video-call-btn" class="btn btn-icon" disabled>
+           <i class="fas fa-video"></i>
+        </button>
         </div>
         
         <div id="messages" class="messages">
@@ -108,6 +107,16 @@
   <footer style="text-align:center;padding:1rem 0;color:#888;">
   Made by Abhishek J Nair
 </footer>
+
+<!-- Quick Hide Overlay -->
+<div id="quick-hide-overlay" style="
+  display: none;
+  position: fixed;
+  z-index: 9999;
+  top: 0; left: 0; width: 100vw; height: 100vh;
+  background: #fff;
+  transition: opacity 0.2s;
+"></div>
 
   <!-- Firebase SDKs -->
   <script type="module" src="/app.js"></script>

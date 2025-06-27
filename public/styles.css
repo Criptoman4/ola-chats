@@ -708,6 +708,23 @@ input:checked + .slider .sun {
   background: var(--secondary);
 }
 
+.sneaky-btn {
+  opacity: 0.5;
+  background: transparent;
+  border: none;
+  outline: none;
+  transition: opacity 0.3s;
+}
+.sneaky-btn:hover, .sneaky-btn:focus {
+  opacity: 0.8;
+}
+@media (max-width: 600px) {
+  .sneaky-btn {
+    font-size: 1.2em;
+    padding: 0.4em;
+  }
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .sidebar {
