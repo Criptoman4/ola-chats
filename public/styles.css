@@ -785,3 +785,12 @@ input:checked + .slider .sun {
     scroll-behavior: auto !important;
   }
 }
+
+
+/* Force icons to be visible */
+i.fas, i.fab {
+  color: rgba(17, 15, 15, 0.847) !important; /* Temporary debug color */
+  font-size: 24px !important;
+  background: rgba(0, 0, 0, 0) !important;
+  display: inline-block !important;
+}
