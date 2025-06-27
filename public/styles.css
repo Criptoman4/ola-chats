@@ -718,6 +718,42 @@ input:checked + .slider .sun {
 .sneaky-btn:hover, .sneaky-btn:focus {
   opacity: 0.8;
 }
+
+/* ===== Accessibility Improvements ===== */
+.btn:focus, 
+input:focus, 
+button:focus {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* Reduced motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Focus styles for interactive elements */
+.contact:focus {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  background-color: var(--primary-light);
+}
+
+/* Better contrast for dark mode */
+.dark-mode .status-text {
+  color: var(--dark-text-light);
+}
+
+/* Message input focus state */
+.message-input-container input:focus {
+  box-shadow: 0 0 0 2px var(--primary-light);
+}
+
 @media (max-width: 600px) {
   .sneaky-btn {
     font-size: 1.2em;

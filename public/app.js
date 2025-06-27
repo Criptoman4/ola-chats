@@ -17,7 +17,8 @@ import {
   getDocs, 
   onSnapshot, 
   orderBy, 
-  serverTimestamp
+  serverTimestamp,
+  updateDoc // Added missing import
 } from "https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore.js";
 
 // Firebase configuration
@@ -64,6 +65,7 @@ let currentUser = null;
 let recipientUid = null;
 let contacts = [];
 let unsubscribeMessages = null;
+let unsubscribeContacts = null; // Added for contacts listener cleanup
 
 /* ===== Theme Management ===== */
 function initTheme() {
@@ -91,8 +93,10 @@ function disableDarkMode() {
 function showNotification(message, type = 'success') {
   const notification = document.createElement('div');
   notification.className = `notification ${type}`;
+  notification.setAttribute('role', 'alert');
+  notification.setAttribute('aria-live', 'assertive');
   notification.innerHTML = `
-    <i class="fas fa-${type === 'error' ? 'exclamation-circle' : 'check-circle'}"></i>
+    <i class="fas fa-${type === 'error' ? 'exclamation-circle' : 'check-circle'}" aria-hidden="true"></i>
     <span>${message}</span>
   `;
   document.body.appendChild(notification);
@@ -156,6 +160,17 @@ async function handleSignOut() {
       });
     }
     await signOut(auth);
+    
+    // Clean up listeners
+    if (unsubscribeMessages) {
+      unsubscribeMessages();
+      unsubscribeMessages = null;
+    }
+    if (unsubscribeContacts) {
+      unsubscribeContacts();
+      unsubscribeContacts = null;
+    }
+    
     showNotification('Successfully signed out');
   } catch (error) {
     console.error('Sign-out error:', error);
@@ -167,11 +182,18 @@ function updateUserUI() {
   if (currentUser) {
     elements.userName.textContent = currentUser.displayName;
     elements.userAvatar.src = currentUser.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(currentUser.displayName)}&background=6C63FF`;
+    elements.userAvatar.alt = `${currentUser.displayName}'s avatar`;
     elements.authContainer.classList.add('hidden');
     elements.chatContainer.classList.remove('hidden');
   } else {
     elements.authContainer.classList.remove('hidden');
     elements.chatContainer.classList.add('hidden');
+    elements.messagesDiv.innerHTML = `
+      <div class="empty-state">
+        <i class="fas fa-comments" aria-hidden="true"></i>
+        <p>Please sign in to start chatting</p>
+      </div>
+    `;
   }
 }
 
@@ -180,49 +202,67 @@ async function loadContacts() {
   try {
     const usersRef = collection(db, 'users');
     const q = query(usersRef, where('uid', '!=', currentUser.uid));
-    const querySnapshot = await getDocs(q);
     
-    contacts = [];
-    elements.contactsList.innerHTML = '';
-    
-    if (querySnapshot.empty) {
-      elements.contactsList.innerHTML = `
-        <div class="empty-contacts">
-          <i class="fas fa-user-plus"></i>
-          <p>No contacts found</p>
-          <small>Invite friends to join!</small>
-        </div>
-      `;
-      return;
+    // Clean up previous listener if exists
+    if (unsubscribeContacts) {
+      unsubscribeContacts();
     }
     
-    querySnapshot.forEach((doc, index) => {
-      const contact = doc.data();
-      contacts.push(contact);
+    unsubscribeContacts = onSnapshot(q, (querySnapshot) => {
+      contacts = [];
+      elements.contactsList.innerHTML = '';
       
-      const contactElement = document.createElement('div');
-      contactElement.className = 'contact';
-      contactElement.style.animationDelay = `${index * 50}ms`;
-      contactElement.innerHTML = `
-        <div class="avatar-container">
-          <img src="${contact.photoURL}" alt="${contact.displayName}" class="avatar">
-          <span class="status-indicator ${contact.status === 'online' ? 'online' : 'offline'}"></span>
-        </div>
-        <div class="contact-info">
-          <h4>${contact.displayName}</h4>
-          <p class="status-text">
-            ${contact.status === 'online' ? 'Online' : 'Last seen recently'}
-          </p>
-        </div>
-        <i class="fas fa-chevron-right contact-arrow"></i>
-      `;
+      if (querySnapshot.empty) {
+        elements.contactsList.innerHTML = `
+          <div class="empty-contacts">
+            <i class="fas fa-user-plus" aria-hidden="true"></i>
+            <p>No contacts found</p>
+            <small>Invite friends to join!</small>
+          </div>
+        `;
+        return;
+      }
       
-      contactElement.addEventListener('click', () => {
-        selectContact(contact);
+      querySnapshot.forEach((doc, index) => {
+        const contact = doc.data();
+        contacts.push(contact);
+        
+        const contactElement = document.createElement('div');
+        contactElement.className = 'contact';
+        contactElement.style.animationDelay = `${index * 50}ms`;
+        contactElement.setAttribute('role', 'button');
+        contactElement.tabIndex = 0;
+        contactElement.innerHTML = `
+          <div class="avatar-container">
+            <img src="${contact.photoURL}" alt="${contact.displayName}" class="avatar">
+            <span class="status-indicator ${contact.status === 'online' ? 'online' : 'offline'}"></span>
+          </div>
+          <div class="contact-info">
+            <h4>${contact.displayName}</h4>
+            <p class="status-text">
+              ${contact.status === 'online' ? 'Online' : 'Last seen recently'}
+            </p>
+          </div>
+          <i class="fas fa-chevron-right contact-arrow" aria-hidden="true"></i>
+        `;
+        
+        contactElement.addEventListener('click', () => {
+          selectContact(contact);
+        });
+        
+        contactElement.addEventListener('keypress', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            selectContact(contact);
+          }
+        });
+        
+        elements.contactsList.appendChild(contactElement);
       });
-      
-      elements.contactsList.appendChild(contactElement);
+    }, (error) => {
+      console.error('Contacts listener error:', error);
+      showNotification('Error loading contacts', 'error');
     });
+    
   } catch (error) {
     console.error('Load contacts error:', error);
     showNotification('Failed to load contacts', 'error');
@@ -232,11 +272,13 @@ async function loadContacts() {
 function selectContact(contact) {
   if (unsubscribeMessages) {
     unsubscribeMessages();
+    unsubscribeMessages = null;
   }
   
   recipientUid = contact.uid;
   elements.recipientName.textContent = contact.displayName;
   elements.recipientAvatar.src = contact.photoURL;
+  elements.recipientAvatar.alt = `${contact.displayName}'s avatar`;
   elements.recipientStatus.textContent = contact.status === 'online' ? 'Online' : 'Offline';
   elements.recipientStatus.className = `status-text ${contact.status === 'online' ? 'online' : 'offline'}`;
   
@@ -280,7 +322,7 @@ function displayMessage(message) {
   messageElement.innerHTML = `
     ${message.senderId !== currentUser.uid ? `
       <div class="message-avatar">
-        <img src="${elements.recipientAvatar.src}" alt="Avatar" class="avatar">
+        <img src="${elements.recipientAvatar.src}" alt="${message.senderName}" class="avatar">
       </div>
     ` : ''}
     <div class="message-content">
@@ -288,7 +330,7 @@ function displayMessage(message) {
         <p>${message.text}</p>
         <span class="message-time">
           ${formatTimestamp(message.timestamp)}
-          ${message.senderId === currentUser.uid ? '<i class="fas fa-check-double status-icon"></i>' : ''}
+          ${message.senderId === currentUser.uid ? '<i class="fas fa-check-double status-icon" aria-hidden="true"></i>' : ''}
         </span>
       </div>
     </div>
@@ -310,6 +352,7 @@ async function sendMessage() {
       timestamp: serverTimestamp()
     });
     elements.messageInput.value = '';
+    elements.messageInput.focus();
   } catch (error) {
     console.error('Send error:', error);
     showNotification('Failed to send message', 'error');
@@ -390,12 +433,9 @@ quickHideBtn.addEventListener('click', () => {
   if (isHidden) {
     quickHideOverlay.style.display = 'block';
     quickHideBtn.title = "Unhide";
-    // Optionally change icon to indicate unhide:
-    // quickHideBtn.innerHTML = '<i class="fas fa-eye-slash"></i>';
   } else {
     quickHideOverlay.style.display = 'none';
     quickHideBtn.title = "Menu";
-    // quickHideBtn.innerHTML = '<i class="fas fa-bars"></i>';
   }
 });
 
