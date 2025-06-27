@@ -64,6 +64,46 @@ if (signOutBtn) {
   });
 }
 
+// Dark Mode Elements
+const themeCheckbox = document.getElementById('theme-checkbox');
+const body = document.body;
+
+// Check for saved theme preference
+const savedTheme = localStorage.getItem('theme');
+if (savedTheme === 'dark') {
+  body.classList.add('dark-mode');
+  themeCheckbox.checked = true;
+} else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+  // Check system preference
+  body.classList.add('dark-mode');
+  themeCheckbox.checked = true;
+  localStorage.setItem('theme', 'dark');
+}
+
+// Theme toggle event
+themeCheckbox.addEventListener('change', () => {
+  if (themeCheckbox.checked) {
+    body.classList.add('dark-mode');
+    localStorage.setItem('theme', 'dark');
+  } else {
+    body.classList.remove('dark-mode');
+    localStorage.setItem('theme', 'light');
+  }
+});
+
+// Watch for system theme changes
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+  if (e.matches) {
+    body.classList.add('dark-mode');
+    themeCheckbox.checked = true;
+    localStorage.setItem('theme', 'dark');
+  } else {
+    body.classList.remove('dark-mode');
+    themeCheckbox.checked = false;
+    localStorage.setItem('theme', 'light');
+  }
+});
+
 // Set recipient by email
 recipientEmail.addEventListener('change', async () => {
   const email = recipientEmail.value.trim();
