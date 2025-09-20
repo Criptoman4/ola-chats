@@ -23,13 +23,7 @@ import {
 
 // Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyBmIfx2oHpH4fxmkmrElhPr6jDpyTOtaUA",
-  authDomain: "ola-chat-10477.firebaseapp.com",
-  projectId: "ola-chat-10477",
-  storageBucket: "ola-chat-10477.appspot.com",
-  messagingSenderId: "770012786788",
-  appId: "1:770012786788:web:b5836dda07fce307c92f71",
-  measurementId: "G-MV641EK9BE"
+ //pate firebase config here"
 };
 
 // Initialize Firebase
